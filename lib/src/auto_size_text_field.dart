@@ -682,10 +682,9 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
       constraintWidth -= widget.decoration.contentPadding!.horizontal;
       constraintHeight -= widget.decoration.contentPadding!.vertical;
     }
-
+    final renderText = text.text?.replaceAll("\u{00A0}", "🗾") ?? "";
     if (!widget.wrapWords) {
-      List<String?> words = text.toPlainText().split(RegExp('\\n+'));
-
+      List<String?> words = renderText.split(RegExp('\\n+'));
       // Adds prefix and suffix text
       if (widget.decoration.prefixText != null)
         words.add(widget.decoration.prefixText);
@@ -721,11 +720,10 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
 
     if (word.length > 0) {
       // replace all \n with 'space with \n' to prevent dropping last character to new line
-      var textContents = text.text ?? '';
-      word = textContents.replaceAll('\n', ' \n');
+      word = renderText.replaceAll('\n', ' \n');
       // \n is 10, <space> is 32
-      if (textContents.codeUnitAt(textContents.length - 1) != 10 &&
-          textContents.codeUnitAt(textContents.length - 1) != 32) {
+      if (renderText.codeUnitAt(renderText.length - 1) != 10 &&
+          renderText.codeUnitAt(renderText.length - 1) != 32) {
         word += ' ';
       }
     }
