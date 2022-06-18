@@ -684,7 +684,7 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
     }
 
     if (!widget.wrapWords) {
-      List<String?> words = text.toPlainText().split(RegExp('\\s+'));
+      List<String?> words = text.toPlainText().split(RegExp('\\n+'));
 
       // Adds prefix and suffix text
       if (widget.decoration.prefixText != null)
