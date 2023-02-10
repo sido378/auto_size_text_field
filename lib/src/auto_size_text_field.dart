@@ -230,12 +230,14 @@ class AutoSizeTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.readOnly}
   final bool readOnly;
 
-  /// Configuration of toolbar options.
+  /// {@macro flutter.widgets.EditableText.contextMenuBuilder}
   ///
-  /// If not set, select all and paste will default to be enabled. Copy and cut
-  /// will be disabled if [obscureText] is true. If [readOnly] is true,
-  /// paste and cut will be disabled regardless.
-  final ToolbarOptions toolbarOptions;
+  /// If not provided, will build a default menu based on the platform.
+  ///
+  /// See also:
+  ///
+  ///  * [AdaptiveTextSelectionToolbar], which is built by default.
+  final EditableTextContextMenuBuilder? contextMenuBuilder;
 
   /// {@macro flutter.widgets.editableText.showCursor}
   final bool? showCursor;
@@ -312,6 +314,9 @@ class AutoSizeTextField extends StatefulWidget {
 
   /// {@macro flutter.widgets.editableText.cursorWidth}
   final double cursorWidth;
+
+  /// {@macro flutter.widgets.editableText.cursorHeight}
+  final double? cursorHeight;
 
   /// {@macro flutter.widgets.editableText.cursorRadius}
   final Radius? cursorRadius;
@@ -449,7 +454,7 @@ class AutoSizeTextField extends StatefulWidget {
     this.maxLines = 1,
     this.expands = false,
     this.readOnly = false,
-    ToolbarOptions? toolbarOptions,
+    EditableTextContextMenuBuilder? contextMenuBuilder,
     this.showCursor,
     this.maxLength,
     this.maxLengthEnforcement,
@@ -458,6 +463,7 @@ class AutoSizeTextField extends StatefulWidget {
     this.onSubmitted,
     this.inputFormatters,
     this.enabled,
+    this.cursorHeight,
     this.cursorWidth = 2.0,
     this.cursorRadius,
     this.cursorColor,
@@ -487,18 +493,7 @@ class AutoSizeTextField extends StatefulWidget {
             maxLength > 0),
         keyboardType = keyboardType ??
             (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
-        toolbarOptions = toolbarOptions ??
-            (obscureText
-                ? const ToolbarOptions(
-                    selectAll: true,
-                    paste: true,
-                  )
-                : const ToolbarOptions(
-                    copy: true,
-                    cut: true,
-                    selectAll: true,
-                    paste: true,
-                  )),
+        contextMenuBuilder = contextMenuBuilder,
         super(key: key);
 
   /// The text to display.
@@ -561,17 +556,19 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
     return Container(
       width: widget.fullwidth
           ? double.infinity
-          : math.max(fontSize, _textSpanWidth * MediaQuery.of(context).textScaleFactor),
+          : math.max(fontSize, _textSpanWidth),
       child: TextField(
         key: widget.textFieldKey,
         autocorrect: widget.autocorrect,
         autofillHints: widget.autofillHints,
         autofocus: widget.autofocus,
         buildCounter: widget.buildCounter,
+        contextMenuBuilder: widget.contextMenuBuilder,
         controller: widget.controller,
         cursorColor: widget.cursorColor,
         cursorRadius: widget.cursorRadius,
         cursorWidth: widget.cursorWidth,
+        cursorHeight: widget.cursorHeight,
         decoration: widget.decoration,
         dragStartBehavior: widget.dragStartBehavior,
         enabled: widget.enabled,
@@ -607,7 +604,6 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
         textCapitalization: widget.textCapitalization,
         textDirection: widget.textDirection,
         textInputAction: widget.textInputAction,
-        toolbarOptions: widget.toolbarOptions,
       ),
     );
   }
