@@ -5,8 +5,30 @@ part of auto_size_text_field;
 /// All size constraints as well as maxLines are taken into account. If the text
 /// overflows anyway, you should check if the parent widget actually constraints
 /// the size of this widget.
-class AutoSizeTextField extends StatefulWidget {
+class AutoSizeTextFormField extends StatefulWidget {
   static const double _defaultFontSize = 14.0;
+
+  /// Used to enable/disable this form field auto validation and update its error text.
+  ///
+  /// If `AutovalidateMode.onUserInteraction`, this [FormField] will only auto-validate after its content changes. If `AutovalidateMode.always`, it will auto-validate even without user interaction. If `AutovalidateMode.disabled`, auto-validation will be disabled.
+  ///
+  /// Defaults to `AutovalidateMode.disabled`, cannot be null.
+  final AutovalidateMode? autovalidateMode;
+
+  /// An optional value to initialize the form field to, or null otherwise.
+  final String? initialValue;
+
+  final Function(String)? onFieldSubmitted;
+
+  /// An optional method to call with the final value when the form is saved via `FormState.save`.
+  final Function(String?)? onSaved;
+
+  /// An optional method that validates an input. Returns an error string to display if the input is invalid, or null otherwise.
+  ///
+  /// The returned value is exposed by the `FormFieldState.errorText` property. The [TextFormField] uses this to override the `InputDecoration.errorText` value.
+  ///
+  /// Alternating between error and normal state can cause the height of the [TextFormField] to change if no other subtext decoration is set on the field. To create a field whose height is fixed regardless of whether or not an error is displayed, either wrap the [TextFormField] in a fixed height parent like [SizedBox], or set the `InputDecoration.helperText` parameter to a space.
+  final String? Function(String?)? validator;
 
   /// If [maxLength] is set to this value, only the "current input length"
   /// part of the character counter is shown.
@@ -14,7 +36,7 @@ class AutoSizeTextField extends StatefulWidget {
 
   /// Sets the key for the resulting [TextField] widget.
   ///
-  /// This allows you to find the actual `Text` widget built by `AutoSizeTextField`.
+  /// This allows you to find the actual `Text` widget built by `AutoSizeTextFormField`.
   final Key? textFieldKey;
 
   /// The text to display as a [TextSpan].
@@ -233,21 +255,12 @@ class AutoSizeTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.readOnly}
   final bool readOnly;
 
-  /// {@macro flutter.widgets.EditableText.contextMenuBuilder}
+  /// Configuration of toolbar options.
   ///
-  /// If not provided, will build a default menu based on the platform.
-  ///
-  /// See also:
-  ///
-  ///  * [AdaptiveTextSelectionToolbar], which is built by default.
-  final EditableTextContextMenuBuilder? contextMenuBuilder;
-
-  static Widget _defaultContextMenuBuilder(
-      BuildContext context, EditableTextState editableTextState) {
-    return AdaptiveTextSelectionToolbar.editableText(
-      editableTextState: editableTextState,
-    );
-  }
+  /// If not set, select all and paste will default to be enabled. Copy and cut
+  /// will be disabled if [obscureText] is true. If [readOnly] is true,
+  /// paste and cut will be disabled regardless.
+  final ToolbarOptions toolbarOptions;
 
   /// {@macro flutter.widgets.editableText.showCursor}
   final bool? showCursor;
@@ -303,15 +316,6 @@ class AutoSizeTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.onEditingComplete}
   final VoidCallback? onEditingComplete;
 
-  /// {@macro flutter.widgets.editableText.onSubmitted}
-  ///
-  /// See also:
-  ///
-  ///  * [EditableText.onSubmitted] for an example of how to handle moving to
-  ///    the next/previous field when using [TextInputAction.next] and
-  ///    [TextInputAction.previous] for [textInputAction].
-  final ValueChanged<String>? onSubmitted;
-
   /// {@macro flutter.widgets.editableText.inputFormatters}
   final List<TextInputFormatter>? inputFormatters;
 
@@ -325,9 +329,6 @@ class AutoSizeTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.cursorWidth}
   final double cursorWidth;
 
-  /// {@macro flutter.widgets.editableText.cursorHeight}
-  final double? cursorHeight;
-
   /// {@macro flutter.widgets.editableText.cursorRadius}
   final Radius? cursorRadius;
 
@@ -336,16 +337,6 @@ class AutoSizeTextField extends StatefulWidget {
   /// Defaults to [TextSelectionThemeData.cursorColor] or [CupertinoTheme.primaryColor]
   /// depending on [ThemeData.platform].
   final Color? cursorColor;
-
-  /// Controls how tall the selection highlight boxes are computed to be.
-  ///
-  /// See [ui.BoxHeightStyle] for details on available styles.
-  final ui.BoxHeightStyle selectionHeightStyle;
-
-  /// Controls how wide the selection highlight boxes are computed to be.
-  ///
-  /// See [ui.BoxWidthStyle] for details on available styles.
-  final ui.BoxWidthStyle selectionWidthStyle;
 
   /// The appearance of the keyboard.
   ///
@@ -359,9 +350,6 @@ class AutoSizeTextField extends StatefulWidget {
 
   /// {@macro flutter.widgets.editableText.enableInteractiveSelection}
   final bool enableInteractiveSelection;
-
-  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
-  final DragStartBehavior dragStartBehavior;
 
   /// {@template flutter.material.textfield.onTap}
   /// Called for each distinct tap except for every second tap of a double tap.
@@ -427,12 +415,17 @@ class AutoSizeTextField extends StatefulWidget {
 
   final double? minWidth;
 
-  /// Creates a [AutoSizeTextField] widget.
+  /// Creates a [AutoSizeTextFormField] widget.
   ///
   /// If the [style] argument is null, the text will use the style from the
   /// closest enclosing [DefaultTextStyle].
-  const AutoSizeTextField({
+  const AutoSizeTextFormField({
     Key? key,
+    this.autovalidateMode,
+    this.initialValue,
+    this.validator,
+    this.onFieldSubmitted,
+    this.onSaved,
     this.fullwidth = true,
     this.textFieldKey,
     this.style,
@@ -464,24 +457,19 @@ class AutoSizeTextField extends StatefulWidget {
     this.maxLines = 1,
     this.expands = false,
     this.readOnly = false,
-    this.contextMenuBuilder = _defaultContextMenuBuilder,
+    ToolbarOptions? toolbarOptions,
     this.showCursor,
     this.maxLength,
     this.maxLengthEnforcement,
     this.onChanged,
     this.onEditingComplete,
-    this.onSubmitted,
     this.inputFormatters,
     this.enabled,
-    this.cursorHeight,
     this.cursorWidth = 2.0,
     this.cursorRadius,
     this.cursorColor,
-    this.selectionHeightStyle = ui.BoxHeightStyle.tight,
-    this.selectionWidthStyle = ui.BoxWidthStyle.tight,
     this.keyboardAppearance,
     this.scrollPadding = const EdgeInsets.all(20.0),
-    this.dragStartBehavior = DragStartBehavior.start,
     this.enableInteractiveSelection = true,
     this.onTap,
     this.buildCounter,
@@ -504,6 +492,18 @@ class AutoSizeTextField extends StatefulWidget {
             maxLength > 0),
         keyboardType = keyboardType ??
             (maxLines == 1 ? TextInputType.text : TextInputType.multiline),
+        toolbarOptions = toolbarOptions ??
+            (obscureText
+                ? const ToolbarOptions(
+                    selectAll: true,
+                    paste: true,
+                  )
+                : const ToolbarOptions(
+                    copy: true,
+                    cut: true,
+                    selectAll: true,
+                    paste: true,
+                  )),
         super(key: key);
 
   /// The text to display.
@@ -515,10 +515,10 @@ class AutoSizeTextField extends StatefulWidget {
   bool get selectionEnabled => enableInteractiveSelection;
 
   @override
-  _AutoSizeTextFieldState createState() => _AutoSizeTextFieldState();
+  _AutoSizeTextFormFieldState createState() => _AutoSizeTextFormFieldState();
 }
 
-class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
+class _AutoSizeTextFormFieldState extends State<AutoSizeTextFormField> {
   late double _textSpanWidth;
 
   @override
@@ -531,7 +531,8 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
         style = defaultTextStyle.style.merge(widget.style);
       }
       if (style!.fontSize == null) {
-        style = style.copyWith(fontSize: AutoSizeTextField._defaultFontSize);
+        style =
+            style.copyWith(fontSize: AutoSizeTextFormField._defaultFontSize);
       }
 
       var maxLines = widget.maxLines ?? defaultTextStyle.maxLines;
@@ -566,26 +567,26 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
     return Container(
       width: widget.fullwidth
           ? double.infinity
-          : math.max(fontSize, _textSpanWidth),
-      child: TextField(
+          : math.max(fontSize,
+              _textSpanWidth * MediaQuery.of(context).textScaleFactor),
+      child: TextFormField(
         key: widget.textFieldKey,
+        autovalidateMode: widget.autovalidateMode,
         autocorrect: widget.autocorrect,
         autofillHints: widget.autofillHints,
         autofocus: widget.autofocus,
         buildCounter: widget.buildCounter,
-        contextMenuBuilder: widget.contextMenuBuilder,
         controller: widget.controller,
         cursorColor: widget.cursorColor,
         cursorRadius: widget.cursorRadius,
         cursorWidth: widget.cursorWidth,
-        cursorHeight: widget.cursorHeight,
         decoration: widget.decoration,
-        dragStartBehavior: widget.dragStartBehavior,
         enabled: widget.enabled,
         enableInteractiveSelection: widget.enableInteractiveSelection,
         enableSuggestions: widget.enableSuggestions,
         expands: widget.expands,
         focusNode: widget.focusNode,
+        initialValue: widget.initialValue,
         inputFormatters: widget.inputFormatters,
         keyboardAppearance: widget.keyboardAppearance,
         keyboardType: widget.keyboardType,
@@ -594,16 +595,15 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
         maxLines: widget.maxLines,
         minLines: widget.minLines,
         obscureText: widget.obscureText,
+        onFieldSubmitted: widget.onFieldSubmitted,
         onChanged: widget.onChanged,
         onEditingComplete: widget.onEditingComplete,
-        onSubmitted: widget.onSubmitted,
         onTap: widget.onTap,
+        onSaved: widget.onSaved,
         readOnly: widget.readOnly,
         scrollController: widget.scrollController,
         scrollPadding: widget.scrollPadding,
         scrollPhysics: widget.scrollPhysics,
-        selectionHeightStyle: widget.selectionHeightStyle,
-        selectionWidthStyle: widget.selectionWidthStyle,
         showCursor: widget.showCursor,
         smartDashesType: widget.smartDashesType,
         smartQuotesType: widget.smartQuotesType,
@@ -614,6 +614,8 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
         textCapitalization: widget.textCapitalization,
         textDirection: widget.textDirection,
         textInputAction: widget.textInputAction,
+        toolbarOptions: widget.toolbarOptions,
+        validator: widget.validator,
         selectionControls: widget.selectionControls,
       ),
     );
@@ -690,9 +692,10 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
       constraintWidth -= widget.decoration.contentPadding!.horizontal;
       constraintHeight -= widget.decoration.contentPadding!.vertical;
     }
-    final renderText = text.text?.replaceAll("\u{00A0}", "🗾") ?? "";
+
     if (!widget.wrapWords) {
-      List<String?> words = renderText.split(RegExp('\\n+'));
+      List<String?> words = text.toPlainText().split(RegExp('\\s+'));
+
       // Adds prefix and suffix text
       if (widget.decoration.prefixText != null)
         words.add(widget.decoration.prefixText);
@@ -728,10 +731,11 @@ class _AutoSizeTextFieldState extends State<AutoSizeTextField> {
 
     if (word.length > 0) {
       // replace all \n with 'space with \n' to prevent dropping last character to new line
-      word = renderText.replaceAll('\n', ' \n');
+      var textContents = text.text ?? '';
+      word = textContents.replaceAll('\n', ' \n');
       // \n is 10, <space> is 32
-      if (renderText.codeUnitAt(renderText.length - 1) != 10 &&
-          renderText.codeUnitAt(renderText.length - 1) != 32) {
+      if (textContents.codeUnitAt(textContents.length - 1) != 10 &&
+          textContents.codeUnitAt(textContents.length - 1) != 32) {
         word += ' ';
       }
     }
